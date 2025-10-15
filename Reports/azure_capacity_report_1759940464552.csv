@@ -1,0 +1,5 @@
+region,average_cpu_utilization,average_storage_gb,capacity_status
+East US,75.06,1266.33,Optimal
+West US,73.58,1285.42,Optimal
+North Europe,75.71,1226.98,Optimal
+Southeast Asia,72.96,1230.4,Optimal

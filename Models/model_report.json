@@ -1,0 +1,25 @@
+{
+  "ARIMA_val": {
+    "MAE": 0.1829999999999999,
+    "RMSE": 0.2074849392124642,
+    "MAPE": 16.464151557101655,
+    "Bias": -0.1829999999999999
+  },
+  "artifacts": {
+    "arima_path": "models\\artifacts\\arima_model.pkl",
+    "xgb_path": "models\\artifacts\\xgb_model.json",
+    "lstm_path": "models\\artifacts\\lstm_model.h5"
+  },
+  "XGBoost_val": {
+    "MAE": 0.0002977120876311745,
+    "RMSE": 0.0004407097445823795,
+    "MAPE": 0.027685431745404276,
+    "Bias": -0.00014209198951714574
+  },
+  "LSTM_val": {
+    "MAE": 0.8535787125229835,
+    "RMSE": 0.8594647946148632,
+    "MAPE": 80.10389054973075,
+    "Bias": -0.8535787125229835
+  }
+}

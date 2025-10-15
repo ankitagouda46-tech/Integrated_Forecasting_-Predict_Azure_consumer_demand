@@ -1,0 +1,5 @@
+region,service,action,current_capacity,recommended_capacity,change,priority,reason,estimated_cost_impact
+East US,Compute,Scale Up,1000,1500,+500 units,High,Expected 23% increase in demand,"+$15,000/month"
+West Europe,Storage,Scale Down,2000,1300,-700 TB,Medium,Over-provisioned by 18%,"-$8,500/month"
+Southeast Asia,VMs,Scale Up,800,1650,+850 units,Critical,High growth trajectory detected,"+$22,000/month"
+North Europe,Containers,Scale Up,500,820,+320 units,Medium,Optimal scaling opportunity,"+$9,500/month"

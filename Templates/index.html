@@ -1,0 +1,2263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Azure Demand Forecasting Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
+            padding: 20px 0;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 30px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 1.6rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 20px 0;
+        }
+
+        .nav-item {
+            margin: 5px 0;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            border-radius: 0 25px 25px 0;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
+            border-left-color: #667eea;
+            color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .nav-icon {
+            width: 22px;
+            height: 22px;
+            margin-right: 15px;
+            fill: currentColor;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .topbar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .page-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .filters-container {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-label {
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .filter-select, .filter-input {
+            padding: 8px 12px;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-radius: 10px;
+            background: white;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .filter-select:focus, .filter-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(45deg, var(--card-color), var(--card-color-light));
+        }
+
+        .stat-card:hover {
+            transform: scale(1.08);
+        }
+
+        .stat-value {
+            font-size: 2.4rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--card-color);
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .stat-trend {
+            font-size: 0.8rem;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .trend-up { color: #10b981; }
+        .trend-down { color: #ef4444; }
+
+        .stat-card:nth-child(1) { --card-color: #667eea; --card-color-light: #a5b4fc; }
+        .stat-card:nth-child(2) { --card-color: #10b981; --card-color-light: #6ee7b7; }
+        .stat-card:nth-child(3) { --card-color: #f59e0b; --card-color-light: #fbbf24; }
+        .stat-card:nth-child(4) { --card-color: #8b5cf6; --card-color-light: #c4b5fd; }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            transition: all 0.4s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .chart-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chart-title::before {
+            content: '';
+            width: 5px;
+            height: 25px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 3px;
+            margin-right: 15px;
+        }
+
+        .chart-subtitle {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: normal;
+        }
+
+        .chart-container {
+            height: 350px;
+            position: relative;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .health-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .health-stable {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .recommendations-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .recommendation-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            margin: 10px 0;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .recommendation-action {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .recommendation-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .risk-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .risk-green { background: #10b981; }
+        .risk-yellow { background: #f59e0b; }
+        .risk-red { background: #ef4444; }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .section-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .section-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        .download-btn {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+        }
+
+        .download-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-left-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .success-message {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            color: #10b981;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .confidence-legend {
+            background: rgba(248, 249, 250, 0.05);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .confidence-legend h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .confidence-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+
+        .confidence-color {
+            width: 20px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        .date-range-picker {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar { width: 250px; }
+            .main-content { margin-left: 250px; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { width: 200px; }
+            .main-content { margin-left: 200px; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">Azure Analytics Pro</div>
+                <div class="subtitle">Complete Forecasting Platform</div>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a class="nav-link active" data-section="overview">
+                        <svg class="nav-icon" viewBox="0 0 24 24">
+                            <path d="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z"/>
+                        </svg>
+                        Overview Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-section="insights">
+                        <svg class="nav-icon" viewBox="0 0 24 24">
+                            <path d="M9,2V8H11V22H5V16H3V22H1V8H3V2H9M5,4V6H7V4H5M5,10V14H7V10H5M19,2V8H21V22H15V16H13V22H11V8H13V2H19M15,4V6H17V4H15M15,10V14H17V10H15Z"/>
+                        </svg>
+                        Insights Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-section="forecasts">
+                        <svg class="nav-icon" viewBox="0 0 24 24">
+                            <path d="M23,11H20.5C20.5,7.41 17.59,4.5 14,4.5C11.3,4.5 9,6.05 8.18,8.35C5.5,8.53 3.5,10.68 3.5,13.25C3.5,16.04 5.75,18.3 8.54,18.3H23V11Z"/>
+                        </svg>
+                        Advanced Forecasts
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-section="monitoring">
+                        <svg class="nav-icon" viewBox="0 0 24 24">
+                            <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12C4,13.85 4.63,15.55 5.68,16.91L16.91,5.68C15.55,4.63 13.85,4 12,4Z"/>
+                        </svg>
+                        Model Monitoring
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-section="recommendations">
+                        <svg class="nav-icon" viewBox="0 0 24 24">
+                            <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z"/>
+                        </svg>
+                        Recommendations
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-section="capacity">
+                        <svg class="nav-icon" viewBox="0 0 24 24">
+                            <path d="M19,3H5C3.89,3 3,3.89 3,5V19C3,20.1 3.9,21 5,21H19C20.1,21 21,20.1 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z"/>
+                        </svg>
+                        Capacity Planning
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-section="reports">
+                        <svg class="nav-icon" viewBox="0 0 24 24">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2Z"/>
+                        </svg>
+                        Reports & Export
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Topbar -->
+            <div class="topbar">
+                <h1 class="page-title">Azure Resource Forecasting</h1>
+                <div class="filters-container">
+                    <div class="filter-group">
+                        <label class="filter-label">Region</label>
+                        <select class="filter-select" id="regionFilter">
+                            <option value="all">All Regions</option>
+                            <option value="East US">East US</option>
+                            <option value="West US">West US</option>
+                            <option value="North Europe">North Europe</option>
+                            <option value="Southeast Asia">Southeast Asia</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="refreshData()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- 1. Overview Dashboard Section -->
+            <div id="overview-section" class="content-section active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">94.7%</div>
+                        <div class="stat-label">Model Accuracy</div>
+                        <div class="stat-trend trend-up">↗ +3.2% improvement</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">2.1 TB</div>
+                        <div class="stat-label">Forecasted Storage</div>
+                        <div class="stat-trend trend-up">↗ +156 GB next month</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">1,847</div>
+                        <div class="stat-label">Predicted Peak Users</div>
+                        <div class="stat-trend trend-up">↗ +127 users</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">$42K</div>
+                        <div class="stat-label">Potential Savings</div>
+                        <div class="stat-trend trend-up">↗ Via optimization</div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="chart-card">
+                        <h3 class="chart-title">Demand Forecast with Confidence Intervals</h3>
+                        <div class="chart-container">
+                            <canvas id="demandForecastChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3 class="chart-title">Regional Usage Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="regionalChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Insights Dashboard Section -->
+            <div id="insights-section" class="content-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <div class="section-icon">
+                            <svg viewBox="0 0 24 24"><path d="M9,2V8H11V22H5V16H3V22H1V8H3V2H9M5,4V6H7V4H5M5,10V14H7V10H5M19,2V8H21V22H15V16H13V22H11V8H13V2H19M15,4V6H17V4H15M15,10V14H17V10H15Z"/></svg>
+                        </div>
+                        AI-Powered Insights
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="chart-card">
+                        <h3 class="chart-title">Predictive Analytics Summary</h3>
+                        <div class="chart-container">
+                            <canvas id="predictiveInsightsChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3 class="chart-title">Anomaly Detection</h3>
+                        <div class="chart-container">
+                            <canvas id="anomalyDetectionChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3 class="chart-title">Real-time Performance Metrics</h3>
+                        <div class="chart-container">
+                            <canvas id="actualVsPredictedChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3 class="chart-title">Resource Utilization Trends</h3>
+                        <div class="chart-container">
+                            <canvas id="utilizationChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Advanced Forecasts Section -->
+            <div id="forecasts-section" class="content-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <div class="section-icon">
+                            <svg viewBox="0 0 24 24"><path d="M23,11H20.5C20.5,7.41 17.59,4.5 14,4.5C11.3,4.5 9,6.05 8.18,8.35C5.5,8.53 3.5,10.68 3.5,13.25C3.5,16.04 5.75,18.3 8.54,18.3H23V11Z"/></svg>
+                        </div>
+                        Advanced Forecast Analysis
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="chart-card">
+                        <h3 class="chart-title">
+                            Historical + Forecast with Confidence Intervals
+                            <span class="chart-subtitle">30-day prediction</span>
+                        </h3>
+                        <div class="chart-controls">
+                            <button class="btn-secondary" onclick="toggleForecastType('cpu')" id="cpuToggle">CPU Usage</button>
+                            <button class="btn-secondary" onclick="toggleForecastType('storage')" id="storageToggle">Storage</button>
+                            <button class="btn-secondary" onclick="toggleForecastType('users')" id="usersToggle">Active Users</button>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="historicalForecastChart"></canvas>
+                        </div>
+                        <div class="confidence-legend">
+                            <h4>Confidence Intervals</h4>
+                            <div class="confidence-item">
+                                <div class="confidence-color" style="background: rgba(102, 126, 234, 0.3);"></div>
+                                <span>95% Confidence Interval</span>
+                            </div>
+                            <div class="confidence-item">
+                                <div class="confidence-color" style="background: #667eea;"></div>
+                                <span>Historical Data</span>
+                            </div>
+                            <div class="confidence-item">
+                                <div class="confidence-color" style="background: #10b981;"></div>
+                                <span>Forecast Prediction</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3 class="chart-title">Multi-Model Forecast Comparison</h3>
+                        <div class="chart-container">
+                            <canvas id="multiModelChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3 class="chart-title">Seasonal Patterns Analysis</h3>
+                        <div class="chart-container">
+                            <canvas id="seasonalChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3 class="chart-title">Storage Growth Projection</h3>
+                        <div class="chart-container">
+                            <canvas id="storageForecastChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Model Monitoring Section -->
+            <div id="monitoring-section" class="content-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <div class="section-icon">
+                            <svg viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12C4,13.85 4.63,15.55 5.68,16.91L16.91,5.68C15.55,4.63 13.85,4 12,4Z"/></svg>
+                        </div>
+                        Model Health Monitoring
+                    </div>
+                    <div class="health-indicator health-stable">
+                        🟢 Stable - 94.7% Accuracy
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">94.7%</div>
+                        <div class="stat-label">Current Accuracy</div>
+                        <div class="stat-trend trend-up">↗ Above 85% threshold</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">2.1%</div>
+                        <div class="stat-label">Error Drift</div>
+                        <div class="stat-trend trend-up">Within acceptable range</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">Dec 15</div>
+                        <div class="stat-label">Last Retrain Date</div>
+                        <div class="stat-trend">Next: Jan 15, 2025</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">12ms</div>
+                        <div class="stat-label">Inference Speed</div>
+                        <div class="stat-trend trend-up">Optimal performance</div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="chart-card">
+                        <h3 class="chart-title">Model Accuracy Trend (Last 90 Days)</h3>
+                        <div class="chart-container">
+                            <canvas id="accuracyTrendChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3 class="chart-title">Error Drift Analysis</h3>
+                        <div class="chart-container">
+                            <canvas id="errorDriftChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3 class="chart-title">Model Performance Comparison</h3>
+                        <div class="chart-container">
+                            <canvas id="modelComparisonChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3 class="chart-title">Prediction vs Actual</h3>
+                        <div class="chart-container">
+                            <canvas id="predictionActualChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Recommendations Section -->
+            <div id="recommendations-section" class="content-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <div class="section-icon">
+                            <svg viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z"/></svg>
+                        </div>
+                        AI-Powered Recommendations
+                    </div>
+                        <button onclick="downloadRecommendations()">Download Recommendations</button>
+                </div>
+
+                <div class="recommendations-panel">
+                    <h3 style="margin-bottom: 20px; color: #333;">Capacity Adjustments</h3>
+                    <div class="recommendation-item">
+                        <div>
+                            <div class="recommendation-action">East US Compute</div>
+                            <div style="font-size: 0.85rem; color: #666; margin-top: 5px;">Expected 23% increase in demand</div>
+                        </div>
+                        <div class="recommendation-value">+1,500 units</div>
+                    </div>
+                    <div class="recommendation-item">
+                        <div>
+                            <div class="recommendation-action">West Europe Storage</div>
+                            <div style="font-size: 0.85rem; color: #666; margin-top: 5px;">Over-provisioned by 18%</div>
+                        </div>
+                        <div class="recommendation-value" style="color: #ef4444;">-700 TB</div>
+                    </div>
+                    <div class="recommendation-item">
+                        <div>
+                            <div class="recommendation-action">Southeast Asia VMs</div>
+                            <div style="font-size: 0.85rem; color: #666; margin-top: 5px;">High growth trajectory detected</div>
+                        </div>
+                        <div class="recommendation-value">+850 units</div>
+                    </div>
+                    <div class="recommendation-item">
+                        <div>
+                            <div class="recommendation-action">North Europe Containers</div>
+                            <div style="font-size: 0.85rem; color: #666; margin-top: 5px;">Optimal scaling opportunity</div>
+                        </div>
+                        <div class="recommendation-value">+320 units</div>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3 class="chart-title">Cost Impact Analysis</h3>
+                    <div class="chart-container">
+                        <canvas id="costImpactChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Capacity Planning Section -->
+            <div id="capacity-section" class="content-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <div class="section-icon">
+                            <svg viewBox="0 0 24 24"><path d="M19,3H5C3.89,3 3,3.89 3,5V19C3,20.1 3.9,21 5,21H19C20.1,21 21,20.1 21,19V5C21,3.89 20.1,3 19,3Z"/></svg>
+                        </div>
+                        Capacity Planning Dashboard
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="chart-card">
+                        <h3 class="chart-title">
+                            Capacity vs Forecast Comparison
+                            <span class="chart-subtitle">Next 30 days</span>
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="capacityVsForecastChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3 class="chart-title">Risk Indicators by Region</h3>
+                        <div style="padding: 20px;">
+                            <div style="margin: 15px 0;">
+                                <span class="risk-indicator risk-green"></span>
+                                <strong>East US</strong> - Sufficient Capacity (85% utilization)
+                            </div>
+                            <div style="margin: 15px 0;">
+                                <span class="risk-indicator risk-red"></span>
+                                <strong>West US</strong> - Shortage Risk (98% utilization)
+                            </div>
+                            <div style="margin: 15px 0;">
+                                <span class="risk-indicator risk-yellow"></span>
+                                <strong>North Europe</strong> - Over-provisioned (45% utilization)
+                            </div>
+                            <div style="margin: 15px 0;">
+                                <span class="risk-indicator risk-green"></span>
+                                <strong>Southeast Asia</strong> - Optimal (72% utilization)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3 class="chart-title">30-Day Capacity Forecast</h3>
+                        <div class="chart-container">
+                            <canvas id="capacityForecastChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3 class="chart-title">Resource Utilization Trends</h3>
+                        <div class="chart-container">
+                            <canvas id="utilizationTrendsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Reports & Export Section -->
+            <div id="reports-section" class="content-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <div class="section-icon">
+                            <svg viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2Z"/></svg>
+                        </div>
+                        Reports & Data Export
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="download-btn" onclick="downloadReport('csv')">Download CSV</button>
+                        <button class="download-btn" onclick="downloadReport('excel')">Download Excel</button>
+                        <button class="download-btn" onclick="downloadReport('pdf')">Download PDF</button>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3 class="chart-title">Export Options</h3>
+                    <div style="padding: 20px;">
+                        <div style="margin: 20px 0;">
+                            <h4 style="color: #333; margin-bottom: 10px;">Forecast Report</h4>
+                            <p style="color: #666; margin-bottom: 10px;">Complete forecast data with confidence intervals for all regions and resources.</p>
+                                <button onclick="downloadReport('forecast')">Download Forecast Report</button>
+                            </div>
+                        <div style="margin: 20px 0;">
+                            <h4 style="color: #333; margin-bottom: 10px;">Capacity Planning Report</h4>
+                            <p style="color: #666; margin-bottom: 10px;">Detailed capacity analysis with utilization metrics and risk indicators.</p>
+                            <button onclick="downloadReport('capacity')">Download Capacity Report</button>
+                        </div>
+                        <div style="margin: 20px 0;">
+                            <h4 style="color: #333; margin-bottom: 10px;">Model Comparison Report</h4>
+                            <p style="color: #666; margin-bottom: 10px;">Detailed comparison of all ML models with accuracy metrics and performance data.</p>
+                            <button onclick="downloadReport('comparison')">Download Comparison Report</button>
+                        </div>
+                        <div style="margin: 20px 0;">
+                            <h4 style="color: #333; margin-bottom: 10px;">Full Analytics Report</h4>
+                            <p style="color: #666; margin-bottom: 10px;">Comprehensive report including forecasts, recommendations, and capacity planning.</p>
+                            <button onclick="downloadReport('full')">Download Full Report</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script>
+        // Global Variables
+        const API_BASE_URL = 'http://localhost:5000';
+        let currentForecastType = 'cpu';
+        let charts = {};
+
+        // Chart.js Configuration
+        Chart.defaults.font.family = "'Segoe UI', sans-serif";
+        Chart.defaults.color = '#666';
+
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: { padding: 20, usePointStyle: true }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    borderColor: '#667eea',
+                    borderWidth: 1,
+                    cornerRadius: 8
+                }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: { grid: { color: 'rgba(0,0,0,0.05)' } }
+            }
+        };
+
+        // Mock Data Generation (Fallback)
+        function generateSampleData() {
+            const now = new Date();
+            const historical = [];
+            const forecast = [];
+
+            for (let i = 30; i > 0; i--) {
+                const date = new Date(now.getTime() - i * 86400000);
+                historical.push({
+                    date: date.toISOString().split('T')[0],
+                    cpu: 70 + Math.sin(i * 0.1) * 15 + (Math.random() - 0.5) * 10,
+                    storage: 1500 + Math.sin(i * 0.05) * 300 + (Math.random() - 0.5) * 100,
+                    users: 1200 + Math.sin(i * 0.2) * 200 + (Math.random() - 0.5) * 50
+                });
+            }
+
+            for (let i = 1; i <= 30; i++) {
+                const date = new Date(now.getTime() + i * 86400000);
+                const baseCpu = 75 + Math.sin(i * 0.1) * 12;
+                const baseStorage = 1600 + Math.sin(i * 0.05) * 250;
+                const baseUsers = 1300 + Math.sin(i * 0.2) * 180;
+                
+                forecast.push({
+                    date: date.toISOString().split('T')[0],
+                    cpu: baseCpu,
+                    cpuLower: baseCpu - 8,
+                    cpuUpper: baseCpu + 8,
+                    storage: baseStorage,
+                    storageLower: baseStorage - 100,
+                    storageUpper: baseStorage + 100,
+                    users: baseUsers,
+                    usersLower: baseUsers - 80,
+                    usersUpper: baseUsers + 80
+                });
+            }
+
+            return { historical, forecast };
+        }
+
+        // API Functions
+        async function fetchForecastData(region = 'East US', service = 'Compute', horizon = 30) {
+            try {
+                const response = await fetch(
+                    `${API_BASE_URL}/api/forecast?region=${encodeURIComponent(region)}&service=${encodeURIComponent(service)}&horizon=${horizon}`
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    return data;
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Error fetching forecast:', error);
+                showNotification('Using mock data - backend not responding', 'error');
+                return generateSampleData();
+            }
+        }
+
+        async function fetchDashboardStats() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/dashboard-stats`);
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    return data;
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Error fetching dashboard stats:', error);
+                return null;
+            }
+        }
+
+        async function fetchModelComparison() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/model-comparison`);
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    return data.models;
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Error fetching model comparison:', error);
+                return null;
+            }
+        }
+
+        async function fetchRegionalDistribution() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/regional-distribution`);
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    return data;
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Error fetching regional distribution:', error);
+                return null;
+            }
+        }
+
+        async function fetchCapacityPlanning(region = 'East US', service = 'Compute') {
+            try {
+                const response = await fetch(
+                    `${API_BASE_URL}/api/capacity-planning?region=${encodeURIComponent(region)}&service=${encodeURIComponent(service)}`
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    return data;
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Error fetching capacity planning:', error);
+                return null;
+            }
+        }
+
+        async function fetchMonitoring() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/monitoring`);
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    return data;
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Error fetching monitoring data:', error);
+                return null;
+            }
+        }
+
+        // Navigation System
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const section = this.dataset.section;
+                
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                
+                document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+                document.getElementById(section + '-section').classList.add('active');
+            });
+        });
+
+        // Initialize All Charts
+        async function initCharts() {
+            await initDemandForecastChart();
+            await initRegionalChart();
+            initInsightsCharts();
+            initForecastCharts();
+            await initMonitoringCharts();
+            await initCapacityCharts();
+            initCostImpactChart();
+        }
+
+        async function initDemandForecastChart() {
+            const ctx = document.getElementById('demandForecastChart');
+            if (!ctx) return;
+
+            const data = await fetchForecastData();
+            const labels = [...data.historical.map(d => d.date), ...data.forecast.map(d => d.date)];
+
+            charts.demandForecast = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Historical',
+                        data: [...data.historical.map(d => d.cpu), ...Array(data.forecast.length).fill(null)],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'Forecast',
+                        data: [...Array(data.historical.length).fill(null), ...data.forecast.map(d => d.cpu)],
+                        borderColor: '#10b981',
+                        borderWidth: 3,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.4
+                    }, {
+                        label: 'Upper Bound',
+                        data: [...Array(data.historical.length).fill(null), ...data.forecast.map(d => d.cpuUpper)],
+                        borderColor: 'rgba(102, 126, 234, 0.3)',
+                        borderWidth: 1,
+                        fill: '+1',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)'
+                    }, {
+                        label: 'Lower Bound',
+                        data: [...Array(data.historical.length).fill(null), ...data.forecast.map(d => d.cpuLower)],
+                        borderColor: 'rgba(102, 126, 234, 0.3)',
+                        borderWidth: 1,
+                        fill: false
+                    }]
+                },
+                options: chartOptions
+            });
+        }
+
+        async function initRegionalChart() {
+            const ctx = document.getElementById('regionalChart');
+            if (!ctx) return;
+
+            const regionalData = await fetchRegionalDistribution();
+            
+            if (regionalData) {
+                charts.regional = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: regionalData.labels,
+                        datasets: [{
+                            data: regionalData.data,
+                            backgroundColor: ['#667eea', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { ...chartOptions, cutout: '60%' }
+                });
+            } else {
+                // Fallback to mock data
+                charts.regional = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['East US', 'West US', 'North Europe', 'Southeast Asia'],
+                        datasets: [{
+                            data: [35, 25, 25, 15],
+                            backgroundColor: ['#667eea', '#10b981', '#f59e0b', '#8b5cf6'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { ...chartOptions, cutout: '60%' }
+                });
+            }
+        }
+
+        function initInsightsCharts() {
+            // Predictive Insights
+            const ctx1 = document.getElementById('predictiveInsightsChart');
+            if (ctx1) {
+                charts.predictiveInsights = new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                        datasets: [{
+                            label: 'Predicted Growth',
+                            data: [100, 112, 125, 138],
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: chartOptions
+                });
+            }
+
+            // Anomaly Detection
+            const ctx2 = document.getElementById('anomalyDetectionChart');
+            if (ctx2) {
+                const anomalyData = Array.from({length: 30}, (_, i) => {
+                    const normal = 70 + Math.sin(i * 0.1) * 15;
+                    return i === 15 || i === 23 ? normal + 25 : normal;
+                });
+
+                charts.anomalyDetection = new Chart(ctx2, {
+                    type: 'line',
+                    data: {
+                        labels: Array.from({length: 30}, (_, i) => `Day ${i + 1}`),
+                        datasets: [{
+                            label: 'Normal Usage',
+                            data: anomalyData.map(v => v > 90 ? null : v),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            spanGaps: false,
+                            tension: 0.4
+                        }, {
+                            label: 'Anomalies',
+                            data: anomalyData.map(v => v > 90 ? v : null),
+                            borderColor: '#ef4444',
+                            backgroundColor: '#ef4444',
+                            borderWidth: 2,
+                            pointRadius: 8,
+                            pointStyle: 'triangle',
+                            showLine: false
+                        }]
+                    },
+                    options: chartOptions
+                });
+            }
+
+            // Actual vs Predicted
+            const ctx3 = document.getElementById('actualVsPredictedChart');
+            if (ctx3) {
+                const comparisonData = Array.from({length: 30}, (_, i) => {
+                    const actual = 70 + Math.sin(i * 0.1) * 15 + (Math.random() - 0.5) * 8;
+                    const predicted = actual + (Math.random() - 0.5) * 6;
+                    return { actual, predicted };
+                });
+
+                charts.actualVsPredicted = new Chart(ctx3, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Predictions',
+                            data: comparisonData.map(d => ({x: d.actual, y: d.predicted})),
+                            backgroundColor: 'rgba(102, 126, 234, 0.6)',
+                            borderColor: '#667eea',
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        }, {
+                            label: 'Perfect Prediction Line',
+                            data: [{x: 50, y: 50}, {x: 100, y: 100}],
+                            borderColor: '#ef4444',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            type: 'line',
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        ...chartOptions,
+                        scales: {
+                            x: { title: { display: true, text: 'Actual Values' } },
+                            y: { title: { display: true, text: 'Predicted Values' } }
+                        }
+                    }
+                });
+            }
+            // Utilization Chart
+            const ctx4 = document.getElementById('utilizationChart');
+            if (ctx4) {
+                charts.utilization = new Chart(ctx4, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Used', 'Available', 'Reserved'],
+                        datasets: [{
+                            data: [73, 21, 6],
+                            backgroundColor: ['#667eea', '#10b981', '#f59e0b'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { ...chartOptions, cutout: '60%' }
+                });
+            }
+        }
+
+        async function initForecastCharts() {
+            await updateHistoricalForecastChart();
+
+            // Multi-Model Chart
+            const ctx2 = document.getElementById('multiModelChart');
+            if (ctx2) {
+                const modelData = await fetchModelComparison();
+                
+                if (modelData) {
+                    charts.multiModel = new Chart(ctx2, {
+                        type: 'line',
+                        data: {
+                            labels: Array.from({length: 30}, (_, i) => `Day ${i+1}`),
+                            datasets: modelData.map((model, index) => ({
+                                label: model.name,
+                                data: Array.from({length: 30}, (_, i) => 70 + Math.sin(i * 0.1 + index * 0.5) * 10 + Math.random() * 5),
+                                borderColor: ['#667eea', '#10b981', '#f59e0b'][index],
+                                tension: 0.4
+                            }))
+                        },
+                        options: chartOptions
+                    });
+                } else {
+                    charts.multiModel = new Chart(ctx2, {
+                        type: 'line',
+                        data: {
+                            labels: Array.from({length: 30}, (_, i) => `Day ${i+1}`),
+                            datasets: [{
+                                label: 'LSTM',
+                                data: Array.from({length: 30}, (_, i) => 70 + Math.sin(i * 0.1) * 10 + Math.random() * 5),
+                                borderColor: '#667eea',
+                                tension: 0.4
+                            }, {
+                                label: 'ARIMA',
+                                data: Array.from({length: 30}, (_, i) => 70 + Math.sin(i * 0.1 + 0.5) * 10 + Math.random() * 5),
+                                borderColor: '#10b981',
+                                tension: 0.4
+                            }, {
+                                label: 'XGBoost',
+                                data: Array.from({length: 30}, (_, i) => 70 + Math.sin(i * 0.1 + 1) * 10 + Math.random() * 5),
+                                borderColor: '#f59e0b',
+                                tension: 0.4
+                            }]
+                        },
+                        options: chartOptions
+                    });
+                }
+            }
+
+            // Seasonal Chart
+            const ctx3 = document.getElementById('seasonalChart');
+            if (ctx3) {
+                charts.seasonal = new Chart(ctx3, {
+                    type: 'line',
+                    data: {
+                        labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+                        datasets: [{
+                            label: '2023',
+                            data: [78, 85, 92, 89],
+                            borderColor: '#667eea',
+                            tension: 0.4
+                        }, {
+                            label: '2024 Forecast',
+                            data: [82, 88, 95, 91],
+                            borderColor: '#10b981',
+                            borderDash: [5, 5],
+                            tension: 0.4
+                        }]
+                    },
+                    options: chartOptions
+                });
+            }
+
+            // Storage Forecast
+            const ctx4 = document.getElementById('storageForecastChart');
+            if (ctx4) {
+                const data = await fetchForecastData('East US', 'Storage', 30);
+                charts.storageForecast = new Chart(ctx4, {
+                    type: 'line',
+                    data: {
+                        labels: data.forecast.map(d => d.date),
+                        datasets: [{
+                            label: 'Storage Forecast (GB)',
+                            data: data.forecast.map(d => d.storage),
+                            borderColor: '#667eea',
+                            fill: true,
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: chartOptions
+                });
+            }
+        }
+
+        async function updateHistoricalForecastChart() {
+            const ctx = document.getElementById('historicalForecastChart');
+            if (!ctx) return;
+
+            const data = await fetchForecastData();
+            const labels = [...data.historical.map(d => d.date), ...data.forecast.map(d => d.date)];
+
+            const historicalData = data.historical.map(d => d[currentForecastType]);
+            const forecastMainData = data.forecast.map(d => d[currentForecastType]);
+            const forecastLowerData = data.forecast.map(d => d[currentForecastType + 'Lower']);
+            const forecastUpperData = data.forecast.map(d => d[currentForecastType + 'Upper']);
+
+            if (charts.historicalForecast) {
+                charts.historicalForecast.destroy();
+            }
+
+            charts.historicalForecast = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Historical Data',
+                        data: [...historicalData, ...Array(30).fill(null)],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4
+                    }, {
+                        label: 'Forecast',
+                        data: [...Array(30).fill(null), ...forecastMainData],
+                        borderColor: '#10b981',
+                        borderWidth: 3,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.4
+                    }, {
+                        label: 'Upper Bound',
+                        data: [...Array(30).fill(null), ...forecastUpperData],
+                        borderColor: 'rgba(102, 126, 234, 0.3)',
+                        borderWidth: 1,
+                        fill: '+1',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)'
+                    }, {
+                        label: 'Lower Bound',
+                        data: [...Array(30).fill(null), ...forecastLowerData],
+                        borderColor: 'rgba(102, 126, 234, 0.3)',
+                        borderWidth: 1,
+                        fill: false
+                    }]
+                },
+                options: chartOptions
+            });
+        }
+
+        async function initMonitoringCharts() {
+            const monitoringData = await fetchMonitoring();
+
+            // Accuracy Trend
+            const ctx1 = document.getElementById('accuracyTrendChart');
+            if (ctx1) {
+                if (monitoringData && monitoringData.accuracy_trend) {
+                    charts.accuracyTrend = new Chart(ctx1, {
+                        type: 'line',
+                        data: {
+                            labels: monitoringData.accuracy_trend.map(d => d.date),
+                            datasets: [{
+                                label: 'Model Accuracy',
+                                data: monitoringData.accuracy_trend.map(d => d.accuracy),
+                                borderColor: '#10b981',
+                                fill: true,
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                tension: 0.4
+                            }]
+                        },
+                        options: chartOptions
+                    });
+                } else {
+                    charts.accuracyTrend = new Chart(ctx1, {
+                        type: 'line',
+                        data: {
+                            labels: Array.from({length: 90}, (_, i) => i+1),
+                            datasets: [{
+                                label: 'Model Accuracy',
+                                data: Array.from({length: 90}, () => 90 + Math.random() * 8),
+                                borderColor: '#10b981',
+                                fill: true,
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                tension: 0.4
+                            }]
+                        },
+                        options: chartOptions
+                    });
+                }
+            }
+
+            // Error Drift
+            const ctx2 = document.getElementById('errorDriftChart');
+            if (ctx2) {
+                charts.errorDrift = new Chart(ctx2, {
+                    type: 'line',
+                    data: {
+                        labels: Array.from({length: 30}, (_, i) => `Day ${i+1}`),
+                        datasets: [{
+                            label: 'Error Rate (%)',
+                            data: Array.from({length: 30}, () => 2 + Math.random() * 2),
+                            borderColor: '#f59e0b',
+                            fill: true,
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: chartOptions
+                });
+            }
+
+            // Model Comparison
+            const ctx3 = document.getElementById('modelComparisonChart');
+            if (ctx3) {
+                const modelData = await fetchModelComparison();
+                
+                if (modelData) {
+                    charts.modelComparison = new Chart(ctx3, {
+                        type: 'bar',
+                        data: {
+                            labels: modelData.map(m => m.name),
+                            datasets: [{
+                                label: 'Accuracy (%)',
+                                data: modelData.map(m => m.accuracy),
+                                backgroundColor: ['#667eea', '#10b981', '#f59e0b']
+                            }]
+                        },
+                        options: chartOptions
+                    });
+                } else {
+                    charts.modelComparison = new Chart(ctx3, {
+                        type: 'bar',
+                        data: {
+                            labels: ['LSTM', 'ARIMA', 'XGBoost'],
+                            datasets: [{
+                                label: 'Accuracy (%)',
+                                data: [94.7, 89.2, 91.5],
+                                backgroundColor: ['#667eea', '#10b981', '#f59e0b']
+                            }]
+                        },
+                        options: chartOptions
+                    });
+                }
+            }
+
+            // Prediction vs Actual
+            const ctx4 = document.getElementById('predictionActualChart');
+            if (ctx4) {
+                charts.predictionActual = new Chart(ctx4, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Predictions',
+                            data: Array.from({length: 50}, () => ({
+                                x: 60 + Math.random() * 30,
+                                y: 60 + Math.random() * 30
+                            })),
+                            backgroundColor: 'rgba(102, 126, 234, 0.6)'
+                        }]
+                    },
+                    options: {
+                        ...chartOptions,
+                        scales: {
+                            x: { title: { display: true, text: 'Actual Values' } },
+                            y: { title: { display: true, text: 'Predicted Values' } }
+                        }
+                    }
+                });
+            }
+
+            // Update monitoring dashboard stats
+            if (monitoringData && monitoringData.monitoring) {
+                const healthIndicator = document.querySelector('.health-indicator');
+                if (healthIndicator) {
+                    const mon = monitoringData.monitoring;
+                    healthIndicator.innerHTML = `${mon.health_icon} ${mon.health_status.replace('_', ' ').toUpperCase()} - ${mon.current_accuracy}% Accuracy`;
+                    healthIndicator.className = `health-indicator health-${mon.health_color}`;
+                }
+
+                // Update monitoring stat cards
+                const monitoringSection = document.getElementById('monitoring-section');
+                if (monitoringSection) {
+                    const statCards = monitoringSection.querySelectorAll('.stat-card');
+                    if (statCards[0]) {
+                        statCards[0].querySelector('.stat-value').textContent = `${monitoringData.monitoring.current_accuracy}%`;
+                    }
+                    if (statCards[1]) {
+                        statCards[1].querySelector('.stat-value').textContent = `${monitoringData.monitoring.error_drift}%`;
+                    }
+                    if (statCards[2]) {
+                        const lastDate = new Date(monitoringData.monitoring.last_retrain_date);
+                        statCards[2].querySelector('.stat-value').textContent = lastDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }
+                    if (statCards[3]) {
+                        statCards[3].querySelector('.stat-value').textContent = `${monitoringData.monitoring.inference_speed_ms}ms`;
+                    }
+                }
+            }
+        }
+
+        async function initCapacityCharts() {
+            // Capacity vs Forecast
+            const ctx1 = document.getElementById('capacityVsForecastChart');
+            if (ctx1) {
+                charts.capacityVsForecast = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: ['East US', 'West US', 'North Europe', 'Southeast Asia'],
+                        datasets: [{
+                            label: 'Current Capacity',
+                            data: [1000, 800, 900, 600],
+                            backgroundColor: 'rgba(102, 126, 234, 0.7)'
+                        }, {
+                            label: 'Forecasted Demand',
+                            data: [850, 950, 450, 720],
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)'
+                        }]
+                    },
+                    options: chartOptions
+                });
+            }
+
+            // Capacity Forecast
+            const ctx2 = document.getElementById('capacityForecastChart');
+            if (ctx2) {
+                charts.capacityForecast = new Chart(ctx2, {
+                    type: 'line',
+                    data: {
+                        labels: Array.from({length: 30}, (_, i) => `Day ${i+1}`),
+                        datasets: [{
+                            label: 'Demand Forecast',
+                            data: Array.from({length: 30}, () => 70 + Math.random() * 20),
+                            borderColor: '#667eea',
+                            fill: false,
+                            tension: 0.4
+                        }, {
+                            label: 'Capacity Threshold',
+                            data: Array(30).fill(85),
+                            borderColor: '#ef4444',
+                            borderDash: [5, 5],
+                            fill: false
+                        }]
+                    },
+                    options: chartOptions
+                });
+            }
+
+            // Utilization Trends
+            const ctx3 = document.getElementById('utilizationTrendsChart');
+            if (ctx3) {
+                charts.utilizationTrends = new Chart(ctx3, {
+                    type: 'line',
+                    data: {
+                        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                        datasets: [{
+                            label: 'CPU Utilization',
+                            data: [72, 78, 85, 82],
+                            borderColor: '#667eea',
+                            tension: 0.4
+                        }, {
+                            label: 'Storage Utilization',
+                            data: [65, 68, 71, 75],
+                            borderColor: '#10b981',
+                            tension: 0.4
+                        }]
+                    },
+                    options: chartOptions
+                });
+            }
+        }
+
+        function initCostImpactChart() {
+            const ctx = document.getElementById('costImpactChart');
+            if (ctx) {
+                charts.costImpact = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Current', 'With Recommendations'],
+                        datasets: [{
+                            label: 'Monthly Cost ($K)',
+                            data: [150, 108],
+                            backgroundColor: ['#ef4444', '#10b981']
+                        }]
+                    },
+                    options: chartOptions
+                });
+            }
+        }
+
+        // Update dashboard stats
+        async function updateDashboardStats() {
+            const stats = await fetchDashboardStats();
+            
+            if (stats) {
+                const statCards = document.querySelectorAll('.stat-card');
+                if (statCards[0]) {
+                    statCards[0].querySelector('.stat-value').textContent = `${stats.modelAccuracy}%`;
+                }
+                if (statCards[1]) {
+                    statCards[1].querySelector('.stat-value').textContent = `${stats.totalStorageForecast} TB`;
+                }
+                if (statCards[2]) {
+                    statCards[2].querySelector('.stat-value').textContent = stats.predictedPeakUsers.toLocaleString();
+                }
+                if (statCards[3]) {
+                    statCards[3].querySelector('.stat-value').textContent = `${(stats.potentialSavings / 1000).toFixed(0)}K`;
+                }
+            }
+        }
+
+        // Forecast Type Toggle
+        function toggleForecastType(type) {
+            currentForecastType = type;
+            
+            document.querySelectorAll('.chart-controls .btn-secondary').forEach(btn => {
+                btn.style.background = 'rgba(102, 126, 234, 0.1)';
+                btn.style.color = '#667eea';
+            });
+            
+            const activeBtn = document.getElementById(type + 'Toggle');
+            if (activeBtn) {
+                activeBtn.style.background = '#667eea';
+                activeBtn.style.color = 'white';
+            }
+            
+            updateHistoricalForecastChart();
+        }
+
+        // Data Refresh
+        async function refreshData() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading-spinner"></span> Refreshing...';
+
+            try {
+                // Fetch fresh data from backend
+                await updateDashboardStats();
+                
+                // Reinitialize main charts with new data
+                if (charts.demandForecast) {
+                    charts.demandForecast.destroy();
+                }
+                if (charts.regional) {
+                    charts.regional.destroy();
+                }
+                
+                await initDemandForecastChart();
+                await initRegionalChart();
+                await updateHistoricalForecastChart();
+                
+                showNotification('Data refreshed successfully!', 'success');
+            } catch (error) {
+                console.error('Refresh error:', error);
+                showNotification('Failed to refresh data', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></svg>Refresh';
+            }
+        }
+
+        // Download Functions
+        function downloadReport(type) {
+            // Show format selection modal
+            showFormatSelectionModal('report', type);
+        }
+
+        function downloadRecommendations() {
+            // Show format selection modal
+            showFormatSelectionModal('recommendations');
+        }
+
+        function showFormatSelectionModal(downloadType, reportType = null) {
+            // Remove existing modal if any
+            const existingModal = document.getElementById('formatModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            // Create modal
+            const modal = document.createElement('div');
+            modal.id = 'formatModal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                animation: fadeIn 0.3s ease;
+            `;
+
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: white;
+                border-radius: 20px;
+                padding: 40px;
+                max-width: 500px;
+                width: 90%;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                animation: slideUp 0.3s ease;
+            `;
+
+            const title = downloadType === 'recommendations' ? 'Download Recommendations' : `Download ${reportType} Report`;
+
+            modalContent.innerHTML = `
+                <h2 style="margin-bottom: 10px; color: #333; font-size: 1.8rem;">Select Export Format</h2>
+                <p style="color: #666; margin-bottom: 30px;">${title}</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <button class="format-btn" data-format="csv" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 15px;
+                        padding: 20px;
+                        border: 2px solid #e5e7eb;
+                        border-radius: 12px;
+                        background: white;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        font-size: 1rem;
+                    ">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="#10b981">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M10,19L12,15H9V10H15V15L13,19H10Z"/>
+                        </svg>
+                        <div style="text-align: left; flex: 1;">
+                            <div style="font-weight: 600; color: #333; margin-bottom: 5px;">CSV Format</div>
+                            <div style="font-size: 0.85rem; color: #666;">Comma-separated values, Excel compatible</div>
+                        </div>
+                    </button>
+
+                    <button class="format-btn" data-format="excel" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 15px;
+                        padding: 20px;
+                        border: 2px solid #e5e7eb;
+                        border-radius: 12px;
+                        background: white;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        font-size: 1rem;
+                    ">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="#10b981">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M15.8,20H14L12,13.2L10,20H8.2L5.5,11H7.3L9,17L11,10H13L15,17L16.7,11H18.5L15.8,20M13,9V3.5L18.5,9H13Z"/>
+                        </svg>
+                        <div style="text-align: left; flex: 1;">
+                            <div style="font-weight: 600; color: #333; margin-bottom: 5px;">Excel Format (.xlsx)</div>
+                            <div style="font-size: 0.85rem; color: #666;">Formatted spreadsheet with styling</div>
+                        </div>
+                    </button>
+
+                    <button class="format-btn" data-format="pdf" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 15px;
+                        padding: 20px;
+                        border: 2px solid #e5e7eb;
+                        border-radius: 12px;
+                        background: white;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        font-size: 1rem;
+                    ">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="#ef4444">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M10.5,11.5C10.5,10.67 11.17,10 12,10C12.83,10 13.5,10.67 13.5,11.5V13.5C13.5,14.33 12.83,15 12,15C11.17,15 10.5,14.33 10.5,13.5V11.5M15,18H9V17C9,16.5 9.18,16 9.5,15.67C10.11,15.12 11.03,15 12,15C12.97,15 13.89,15.12 14.5,15.67C14.82,16 15,16.5 15,17V18Z"/>
+                        </svg>
+                        <div style="text-align: left; flex: 1;">
+                            <div style="font-weight: 600; color: #333; margin-bottom: 5px;">PDF Format</div>
+                            <div style="font-size: 0.85rem; color: #666;">Professional report, print-ready</div>
+                        </div>
+                    </button>
+                </div>
+
+                <button id="cancelBtn" style="
+                    width: 100%;
+                    margin-top: 20px;
+                    padding: 12px;
+                    border: 2px solid #e5e7eb;
+                    border-radius: 10px;
+                    background: white;
+                    color: #666;
+                    cursor: pointer;
+                    font-weight: 600;
+                    transition: all 0.3s ease;
+                ">Cancel</button>
+            `;
+
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+
+            // Add hover effects
+            const formatBtns = modalContent.querySelectorAll('.format-btn');
+            formatBtns.forEach(btn => {
+                btn.addEventListener('mouseenter', function() {
+                    this.style.borderColor = '#667eea';
+                    this.style.background = 'rgba(102, 126, 234, 0.05)';
+                    this.style.transform = 'translateX(5px)';
+                });
+                btn.addEventListener('mouseleave', function() {
+                    this.style.borderColor = '#e5e7eb';
+                    this.style.background = 'white';
+                    this.style.transform = 'translateX(0)';
+                });
+                btn.addEventListener('click', function() {
+                    const format = this.dataset.format;
+                    modal.remove();
+                    if (downloadType === 'recommendations') {
+                        executeDownloadRecommendations(format);
+                    } else {
+                        executeDownloadReport(reportType, format);
+                    }
+                });
+            });
+
+            // Cancel button
+            document.getElementById('cancelBtn').addEventListener('click', () => {
+                modal.remove();
+            });
+
+            // Close on outside click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+
+            // Add animations
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes slideUp {
+                    from { transform: translateY(30px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        function executeDownloadReport(type, format) {
+            showNotification(`Generating ${format.toUpperCase()} report...`, 'info');
+
+            const url = `${API_BASE_URL}/api/download/report/${type}?format=${format}`;
+            
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': format === 'pdf' ? 'application/pdf' : 
+                             format === 'excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 
+                             'text/csv'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || `Download failed with status ${response.status}`);
+                    }).catch(() => {
+                        throw new Error(`Download failed with status ${response.status}`);
+                    });
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const downloadUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.style.display = 'none';
+
+                let extension = format;
+                if (format === 'excel') extension = 'xlsx';
+
+                a.download = `azure_${type}_report_${Date.now()}.${extension}`;
+                
+                document.body.appendChild(a);
+                a.click();
+                
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(downloadUrl);
+                }, 100);
+
+                showNotification(`${format.toUpperCase()} report downloaded successfully!`, 'success');
+            })
+            .catch(error => {
+                console.error('Download error:', error);
+                showNotification(error.message || `Failed to download ${type} report. Please try again.`, 'error');
+            });
+        }
+
+        function executeDownloadRecommendations(format) {
+            showNotification(`Generating ${format.toUpperCase()} recommendations...`, 'info');
+
+            const url = `${API_BASE_URL}/api/download/recommendations?format=${format}`;
+            
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': format === 'pdf' ? 'application/pdf' : 
+                             format === 'excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 
+                             'text/csv'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Download failed');
+                    }).catch(() => {
+                        throw new Error('Download failed');
+                    });
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const downloadUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.style.display = 'none';
+
+                let extension = format;
+                if (format === 'excel') extension = 'xlsx';
+
+                a.download = `azure_recommendations_${Date.now()}.${extension}`;
+                
+                document.body.appendChild(a);
+                a.click();
+                
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(downloadUrl);
+                }, 100);
+
+                showNotification(`${format.toUpperCase()} recommendations downloaded successfully!`, 'success');
+            })
+            .catch(error => {
+                console.error('Download error:', error);
+                showNotification(error.message || 'Failed to download recommendations. Please try again.', 'error');
+            });
+        }
+
+        // Notification System
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `${type}-message`;
+            notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000; box-shadow: 0 8px 32px rgba(0,0,0,0.2);';
+            
+            const bgColors = {
+                'success': 'rgba(16, 185, 129, 0.1)',
+                'error': 'rgba(239, 68, 68, 0.1)',
+                'info': 'rgba(102, 126, 234, 0.1)'
+            };
+            const textColors = {
+                'success': '#10b981',
+                'error': '#ef4444',
+                'info': '#667eea'
+            };
+            
+            notification.style.background = bgColors[type] || bgColors['success'];
+            notification.style.color = textColors[type] || textColors['success'];
+            notification.style.border = `1px solid ${textColors[type] || textColors['success']}`;
+            notification.style.padding = '15px';
+            notification.style.borderRadius = '10px';
+            notification.style.display = 'flex';
+            notification.style.alignItems = 'center';
+            notification.style.gap = '10px';
+            
+            notification.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.91,10.59L6.5,12L11,16.5Z"/>
+                </svg>
+                ${message}
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
+            }, 4000);
+        }
+
+        // Test Backend Connection
+        async function testBackendConnection() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/health`);
+                const data = await response.json();
+                
+                if (data.status === 'healthy') {
+                    console.log('✅ Backend connected successfully');
+                    console.log('Backend info:', data);
+                    return true;
+                } else {
+                    console.warn('⚠️ Backend unhealthy:', data);
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Backend connection failed:', error);
+                showNotification('Backend not responding. Using mock data.', 'error');
+                return false;
+            }
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Test backend connection first
+            const backendConnected = await testBackendConnection();
+            
+            if (backendConnected) {
+                showNotification('Loading dashboard with live data...', 'info');
+            } else {
+                showNotification('Loading dashboard with mock data...', 'info');
+            }
+            
+            try {
+                // Update dashboard stats
+                await updateDashboardStats();
+                
+                // Initialize all charts
+                await initCharts();
+                
+                // Set initial forecast type
+                toggleForecastType('cpu');
+                
+                showNotification('Dashboard loaded successfully!', 'success');
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showNotification('Some features may be unavailable', 'error');
+            }
+            
+            // Animation for cards
+            const cards = document.querySelectorAll('.chart-card, .stat-card');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            cards.forEach(card => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                card.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+                observer.observe(card);
+            });
+        });
+    </script>
+</body>
+</html>

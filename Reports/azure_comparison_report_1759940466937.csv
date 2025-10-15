@@ -1,0 +1,4 @@
+model,mae,rmse,mape,accuracy_percent,forecast_bias
+XGBoost,0.0,0.001,0.0,100.0,0.0
+ARIMA,3.809,6.027,5.8,94.2,2.42
+LSTM,4.647,7.126,7.37,92.63,2.591
